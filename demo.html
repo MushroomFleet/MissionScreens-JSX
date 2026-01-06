@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Squadron - Menu System Demo</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ================================================================
+       BASE STYLES & CSS RESET
+       ================================================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    
+    body {
+      font-family: 'Orbitron', 'Rajdhani', sans-serif;
+      background: #0a0a12;
+      color: #e0e0e0;
+    }
+    
+    #root {
+      width: 100%;
+      height: 100%;
+    }
+    
+    /* ================================================================
+       CONTAINER & BACKGROUND EFFECTS
+       ================================================================ */
+    .game-container {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, #0a0a12 0%, #1a1a2e 50%, #0a0a12 100%);
+      overflow: hidden;
+    }
+    
+    .starfield {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+      pointer-events: none;
+      z-index: 999;
+    }
+    
+    /* ================================================================
+       SCREEN LAYOUT
+       ================================================================ */
+    .screen {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      z-index: 1;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .screen.active {
+      display: flex;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* ================================================================
+       TYPOGRAPHY
+       ================================================================ */
+    .title {
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+      background: linear-gradient(180deg, #FFD700 0%, #FF8C00 50%, #FF4500 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 30px rgba(255, 165, 0, 0.5);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+    
+    .title.victory {
+      background: linear-gradient(180deg, #00ff88 0%, #00cc66 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    
+    .title.defeat {
+      background: linear-gradient(180deg, #ff6666 0%, #cc4444 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      font-size: clamp(0.8rem, 2vw, 1.2rem);
+      color: #00ff88;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      margin-bottom: 3rem;
+      text-align: center;
+    }
+    
+    .section-title {
+      color: #00ff88;
+      margin: 0 0 0.75rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    /* ================================================================
+       PANELS & CARDS
+       ================================================================ */
+    .panel {
+      background: linear-gradient(180deg, rgba(20, 30, 50, 0.95) 0%, rgba(10, 20, 35, 0.98) 100%);
+      border: 2px solid #00ff88;
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 800px;
+      width: 90%;
+      box-shadow: 0 0 40px rgba(0, 255, 136, 0.2), inset 0 0 60px rgba(0, 0, 0, 0.5);
+    }
+    
+    .card {
+      background: linear-gradient(180deg, rgba(30, 50, 70, 0.9) 0%, rgba(20, 35, 50, 0.95) 100%);
+      border: 2px solid #3388ff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(51, 136, 255, 0.3);
+    }
+    
+    .card.selected {
+      border-color: #FFD700;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.1);
+    }
+    
+    .card-check {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #FFD700;
+      color: #000;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    
+    .card.selected .card-check {
+      display: flex;
+    }
+    
+    /* ================================================================
+       BUTTONS
+       ================================================================ */
+    .btn {
+      background: linear-gradient(180deg, rgba(30, 60, 90, 0.8) 0%, rgba(20, 40, 60, 0.9) 100%);
+      border: 2px solid #00ff88;
+      border-radius: 4px;
+      padding: 1rem 3rem;
+      margin: 0.5rem;
+      color: #00ff88;
+      font-size: 1.1rem;
+      font-family: inherit;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 280px;
+    }
+    
+    .btn:hover:not(:disabled) {
+      background: linear-gradient(180deg, rgba(0, 255, 136, 0.3) 0%, rgba(0, 200, 100, 0.2) 100%);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.1);
+      transform: scale(1.02);
+    }
+    
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: #444;
+      color: #666;
+    }
+    
+    .btn.secondary {
+      border-color: #888;
+      color: #888;
+    }
+    
+    .btn.secondary:hover:not(:disabled) {
+      background: linear-gradient(180deg, rgba(136, 136, 136, 0.2) 0%, rgba(100, 100, 100, 0.1) 100%);
+      box-shadow: 0 0 20px rgba(136, 136, 136, 0.3);
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.5rem;
+    }
+    
+    /* ================================================================
+       WINGMAN SELECTION
+       ================================================================ */
+    .wingman-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      max-width: 900px;
+    }
+    
+    .wingman-card {
+      flex: 0 0 280px;
+    }
+    
+    .wingman-portrait {
+      font-size: 3rem;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    
+    .wingman-name {
+      color: #3388ff;
+      margin: 0 0 0.25rem;
+      font-size: 1rem;
+    }
+    
+    .wingman-card.selected .wingman-name {
+      color: #FFD700;
+    }
+    
+    .wingman-specialty {
+      color: #00ff88;
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .wingman-desc {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    
+    /* Stats */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2px;
+      font-size: 0.75rem;
+    }
+    
+    .stat-bar {
+      height: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+    
+    .stat-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    
+    .stat-fill.atk { background: linear-gradient(90deg, #ff4444 0%, #cc3333 100%); }
+    .stat-fill.def { background: linear-gradient(90deg, #4488ff 0%, #3366cc 100%); }
+    .stat-fill.sup { background: linear-gradient(90deg, #00ff88 0%, #00cc66 100%); }
+    
+    /* ================================================================
+       MISSION BRIEFING
+       ================================================================ */
+    .mission-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+    }
+    
+    .mission-number {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #FFD700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    
+    .mission-name {
+      margin: 0;
+      color: #00ff88;
+      font-size: 1.5rem;
+    }
+    
+    .mission-subtitle {
+      color: #888;
+      font-size: 0.9rem;
+    }
+    
+    .difficulty-container {
+      margin-left: auto;
+    }
+    
+    .difficulty-label {
+      color: #888;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+    
+    .difficulty-dots {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .difficulty-dot {
+      width: 12px;
+      height: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+    
+    .difficulty-dot.active {
+      background: #ff4444;
+    }
+    
+    .briefing-box {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1.5rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .briefing-title {
+      color: #ff8844;
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+    }
+    
+    .briefing-text {
+      color: #ccc;
+      line-height: 1.6;
+    }
+    
+    .squadron-grid {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .squadron-member {
+      background: rgba(0, 100, 255, 0.1);
+      border: 1px solid rgba(51, 136, 255, 0.3);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .squadron-member.leader {
+      background: rgba(255, 215, 0, 0.1);
+      border-color: rgba(255, 215, 0, 0.3);
+    }
+    
+    .squadron-member .portrait {
+      font-size: 1.5rem;
+    }
+    
+    .squadron-member .name {
+      font-weight: 700;
+    }
+    
+    .squadron-member.leader .name { color: #FFD700; }
+    .squadron-member:not(.leader) .name { color: #3388ff; }
+    
+    .squadron-member .role {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    
+    /* ================================================================
+       RESULTS SCREEN
+       ================================================================ */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      margin-bottom: 2rem;
+    }
+    
+    .result-item {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 4px;
+      text-align: center;
+      border: 1px solid rgba(0, 255, 136, 0.3);
+    }
+    
+    .result-value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #FFD700;
+      margin-bottom: 0.25rem;
+    }
+    
+    .result-label {
+      font-size: 0.8rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    
+    .status-grid {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .status-item {
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    
+    .status-item.alive {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid #00ff88;
+    }
+    
+    .status-item.down {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid #ff4444;
+    }
+    
+    .bonus-grid {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .bonus-item {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #FFD700;
+    }
+    
+    .rank-display {
+      text-align: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+    }
+    
+    .rank-label {
+      color: #888;
+      font-size: 0.8rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .rank-value {
+      font-size: 4rem;
+      font-weight: 900;
+      background: linear-gradient(180deg, #FFD700 0%, #FF8C00 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* ================================================================
+       CAMPAIGN MAP
+       ================================================================ */
+    .campaign-map {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      margin-bottom: 1.5rem;
+    }
+    
+    .map-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .map-node {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      transform: translate(-50%, -50%);
+      border: 3px solid;
+    }
+    
+    .map-node.completed {
+      background: linear-gradient(180deg, #00aa66 0%, #008844 100%);
+      border-color: #00ff88;
+      color: #fff;
+    }
+    
+    .map-node.current {
+      background: linear-gradient(180deg, #FFD700 0%, #FF8C00 100%);
+      border-color: #FFD700;
+      color: #000;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+      animation: pulse 2s infinite;
+    }
+    
+    .map-node.available {
+      background: linear-gradient(180deg, #3366aa 0%, #224488 100%);
+      border-color: #3388ff;
+      color: #fff;
+    }
+    
+    .map-node.available:hover {
+      transform: translate(-50%, -50%) scale(1.1);
+      box-shadow: 0 0 20px rgba(51, 136, 255, 0.5);
+    }
+    
+    .map-node.locked {
+      background: linear-gradient(180deg, #333 0%, #222 100%);
+      border-color: #444;
+      color: #666;
+      cursor: not-allowed;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+      50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.9); }
+    }
+    
+    .choice-grid {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .choice-card {
+      flex: 1 1 200px;
+      max-width: 300px;
+    }
+    
+    .choice-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .choice-number {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #3388ff;
+    }
+    
+    .choice-name {
+      font-weight: 700;
+      color: #fff;
+    }
+    
+    .choice-subtitle {
+      font-size: 0.75rem;
+      color: #888;
+    }
+    
+    .choice-desc {
+      color: #aaa;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    
+    /* ================================================================
+       OPTIONS SCREEN
+       ================================================================ */
+    .option-row {
+      margin-bottom: 2rem;
+    }
+    
+    .option-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    
+    .option-value {
+      color: #00ff88;
+    }
+    
+    .slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #00ff88;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: #00ff88;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .toggle-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+    
+    .toggle-label input {
+      width: 20px;
+      height: 20px;
+      accent-color: #00ff88;
+    }
+    
+    .select-input {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid #00ff88;
+      border-radius: 4px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    
+    /* ================================================================
+       GAME COMPLETE
+       ================================================================ */
+    .final-score {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .final-score-label {
+      color: #888;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .final-score-value {
+      font-size: 3rem;
+      font-weight: 900;
+      color: #FFD700;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    
+    .path-display {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    
+    .path-node {
+      padding: 0.5rem 1rem;
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid #00ff88;
+      border-radius: 4px;
+    }
+    
+    .path-arrow {
+      color: #444;
+      align-self: center;
+    }
+    
+    .unlock-banner {
+      background: rgba(255, 215, 0, 0.1);
+      border: 2px solid #FFD700;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .unlock-title {
+      color: #FFD700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    
+    .unlock-name {
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    
+    .unlock-desc {
+      color: #888;
+      font-size: 0.9rem;
+    }
+    
+    .all-unlocks {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    .unlock-item {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 215, 0, 0.05);
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+    
+    /* ================================================================
+       NG+ INDICATOR
+       ================================================================ */
+    .ngplus-indicator {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 4px;
+      text-align: center;
+    }
+    
+    .ngplus-title {
+      color: #FFD700;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .ngplus-runs {
+      color: #888;
+      font-size: 0.8rem;
+    }
+    
+    /* ================================================================
+       DEMO CONTROLS (for testing)
+       ================================================================ */
+    .demo-controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 1rem;
+      z-index: 2000;
+      max-width: 300px;
+    }
+    
+    .demo-controls h4 {
+      color: #FFD700;
+      margin: 0 0 0.75rem;
+      font-size: 0.9rem;
+    }
+    
+    .demo-controls button {
+      display: block;
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.25rem 0;
+      background: rgba(51, 136, 255, 0.2);
+      border: 1px solid #3388ff;
+      border-radius: 4px;
+      color: #3388ff;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .demo-controls button:hover {
+      background: rgba(51, 136, 255, 0.4);
+    }
+    
+    .demo-controls .hint {
+      color: #666;
+      font-size: 0.7rem;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div id="root">
+  <div class="game-container">
+    <canvas class="starfield" id="starfield"></canvas>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    
+    <!-- ============================================================
+         MAIN MENU SCREEN
+         ============================================================ -->
+    <div id="mainMenu" class="screen active">
+      <h1 class="title">Star Squadron</h1>
+      <p class="subtitle">Combat Evolved</p>
+      
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <button class="btn" onclick="showScreen('wingmanChoice')">New Game</button>
+        <button class="btn" id="continueBtn" disabled onclick="continueGame()">Continue</button>
+        <button class="btn" onclick="showScreen('options')">Options</button>
+        
+        <div id="ngplusIndicator" class="ngplus-indicator" style="display: none;">
+          <div class="ngplus-title">NEW GAME+ UNLOCKED</div>
+          <div class="ngplus-runs" id="runsCount">0 runs completed</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ============================================================
+         OPTIONS SCREEN
+         ============================================================ -->
+    <div id="options" class="screen">
+      <h2 class="title" style="font-size: 2.5rem;">Options</h2>
+      
+      <div class="panel">
+        <div class="option-row">
+          <label class="option-label">
+            <span>Master Volume</span>
+            <span class="option-value" id="masterVolVal">80%</span>
+          </label>
+          <input type="range" class="slider" id="masterVol" min="0" max="100" value="80" 
+                 oninput="updateSlider('masterVol')">
+        </div>
+        
+        <div class="option-row">
+          <label class="option-label">
+            <span>Music Volume</span>
+            <span class="option-value" id="musicVolVal">70%</span>
+          </label>
+          <input type="range" class="slider" id="musicVol" min="0" max="100" value="70"
+                 oninput="updateSlider('musicVol')">
+        </div>
+        
+        <div class="option-row">
+          <label class="option-label">
+            <span>SFX Volume</span>
+            <span class="option-value" id="sfxVolVal">100%</span>
+          </label>
+          <input type="range" class="slider" id="sfxVol" min="0" max="100" value="100"
+                 oninput="updateSlider('sfxVol')">
+        </div>
+        
+        <div class="option-row">
+          <label class="option-label">
+            <span>Voice Volume</span>
+            <span class="option-value" id="voiceVolVal">100%</span>
+          </label>
+          <input type="range" class="slider" id="voiceVol" min="0" max="100" value="100"
+                 oninput="updateSlider('voiceVol')">
+        </div>
+        
+        <div class="toggle-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="showFPS">
+            <span>Show FPS</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="screenShake" checked>
+            <span>Screen Shake</span>
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" id="subtitles" checked>
+            <span>Subtitles</span>
+          </label>
+        </div>
+        
+        <div class="option-row">
+          <label style="display: block; margin-bottom: 0.5rem;">Difficulty</label>
+          <select class="select-input" id="difficulty">
+            <option value="normal">Normal</option>
+            <option value="hard">Hard</option>
+            <option value="expert">Expert (NG+)</option>
+          </select>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn" onclick="showScreen('mainMenu')">Back</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ============================================================
+         WINGMAN CHOICE SCREEN
+         ============================================================ -->
+    <div id="wingmanChoice" class="screen">
+      <h2 class="title" style="font-size: 2rem;">Select Your Wingmen</h2>
+      <p class="subtitle">Choose 2 pilots to join your squadron</p>
+      
+      <div class="wingman-grid">
+        <!-- Falco -->
+        <div class="card wingman-card" id="wingman-falco" onclick="toggleWingman('falco')">
+          <div class="card-check">✓</div>
+          <div class="wingman-portrait">🦅</div>
+          <h3 class="wingman-name">FALCO LOMBARDI</h3>
+          <div class="wingman-specialty">ACE • Offensive Support</div>
+          <p class="wingman-desc">Hot-headed pilot with unmatched aerial combat skills.</p>
+          
+          <div class="stat-row"><span>ATK</span><span>5/5</span></div>
+          <div class="stat-bar"><div class="stat-fill atk" style="width: 100%"></div></div>
+          
+          <div class="stat-row"><span>DEF</span><span>2/5</span></div>
+          <div class="stat-bar"><div class="stat-fill def" style="width: 40%"></div></div>
+          
+          <div class="stat-row"><span>SUP</span><span>3/5</span></div>
+          <div class="stat-bar"><div class="stat-fill sup" style="width: 60%"></div></div>
+        </div>
+        
+        <!-- Peppy -->
+        <div class="card wingman-card" id="wingman-peppy" onclick="toggleWingman('peppy')">
+          <div class="card-check">✓</div>
+          <div class="wingman-portrait">🐰</div>
+          <h3 class="wingman-name">PEPPY HARE</h3>
+          <div class="wingman-specialty">VETERAN • Tactical Advice</div>
+          <p class="wingman-desc">Veteran pilot. Provides strategic guidance during missions.</p>
+          
+          <div class="stat-row"><span>ATK</span><span>3/5</span></div>
+          <div class="stat-bar"><div class="stat-fill atk" style="width: 60%"></div></div>
+          
+          <div class="stat-row"><span>DEF</span><span>3/5</span></div>
+          <div class="stat-bar"><div class="stat-fill def" style="width: 60%"></div></div>
+          
+          <div class="stat-row"><span>SUP</span><span>5/5</span></div>
+          <div class="stat-bar"><div class="stat-fill sup" style="width: 100%"></div></div>
+        </div>
+        
+        <!-- Slippy -->
+        <div class="card wingman-card" id="wingman-slippy" onclick="toggleWingman('slippy')">
+          <div class="card-check">✓</div>
+          <div class="wingman-portrait">🐸</div>
+          <h3 class="wingman-name">SLIPPY TOAD</h3>
+          <div class="wingman-specialty">TECH • Enemy Analysis</div>
+          <p class="wingman-desc">Technical genius. Reveals enemy shield gauges.</p>
+          
+          <div class="stat-row"><span>ATK</span><span>2/5</span></div>
+          <div class="stat-bar"><div class="stat-fill atk" style="width: 40%"></div></div>
+          
+          <div class="stat-row"><span>DEF</span><span>4/5</span></div>
+          <div class="stat-bar"><div class="stat-fill def" style="width: 80%"></div></div>
+          
+          <div class="stat-row"><span>SUP</span><span>4/5</span></div>
+          <div class="stat-bar"><div class="stat-fill sup" style="width: 80%"></div></div>
+        </div>
+      </div>
+      
+      <div class="btn-group">
+        <button class="btn" id="confirmTeamBtn" disabled onclick="confirmTeam()">
+          Confirm Team (0/2)
+        </button>
+      </div>
+    </div>
+    
+    <!-- ============================================================
+         MISSION BRIEFING SCREEN
+         ============================================================ -->
+    <div id="mission" class="screen">
+      <div class="panel">
+        <div class="mission-header">
+          <div class="mission-number" id="missionNumber">1</div>
+          <div>
+            <h2 class="mission-name" id="missionName">CORNERIA</h2>
+            <div class="mission-subtitle" id="missionSubtitle">The Adventure Begins</div>
+          </div>
+          <div class="difficulty-container">
+            <div class="difficulty-label">Difficulty</div>
+            <div class="difficulty-dots" id="difficultyDots">
+              <div class="difficulty-dot active"></div>
+              <div class="difficulty-dot"></div>
+              <div class="difficulty-dot"></div>
+              <div class="difficulty-dot"></div>
+              <div class="difficulty-dot"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="briefing-box">
+          <h3 class="briefing-title">Mission Briefing</h3>
+          <p class="briefing-text" id="missionDesc">
+            Enemy forces have invaded Corneria. Destroy the attack carrier!
+          </p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h3 class="section-title" style="color: #3388ff;">Squadron</h3>
+          <div class="squadron-grid" id="squadronDisplay">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn secondary" onclick="goBackFromMission()">Back</button>
+          <button class="btn" onclick="launchMission()">Launch Mission</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ============================================================
+         RESULTS SCREEN
+         ============================================================ -->
+    <div id="results" class="screen">
+      <h2 class="title" id="resultsTitle" style="font-size: 2.5rem;">Mission Complete</h2>
+      
+      <div class="panel">
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <span style="font-size: 1.5rem; color: #888;" id="resultsLevelName">CORNERIA</span>
+        </div>
+        
+        <div class="results-grid">
+          <div class="result-item">
+            <div class="result-value" id="resultScore">12,450</div>
+            <div class="result-label">Score</div>
+          </div>
+          <div class="result-item">
+            <div class="result-value" id="resultHits">87</div>
+            <div class="result-label">Hits</div>
+          </div>
+          <div class="result-item">
+            <div class="result-value" id="resultAccuracy">78%</div>
+            <div class="result-label">Accuracy</div>
+          </div>
+          <div class="result-item">
+            <div class="result-value" id="resultTime">4:32</div>
+            <div class="result-label">Time</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+          <h3 class="section-title" style="color: #3388ff;">Squadron Status</h3>
+          <div class="status-grid" id="statusDisplay">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;" id="bonusSection">
+          <h3 class="section-title" style="color: #FFD700;">Bonuses</h3>
+          <div class="bonus-grid" id="bonusDisplay">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <div class="rank-display">
+          <div class="rank-label">RANK</div>
+          <div class="rank-value" id="rankDisplay">A</div>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn" id="resultsBtn" onclick="continueFromResults()">Continue</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ============================================================
+         CAMPAIGN CHOICE SCREEN
+         ============================================================ -->
+    <div id="campaignChoice" class="screen">
+      <h2 class="title" style="font-size: 2rem;">Choose Your Path</h2>
+      <p class="subtitle">Select your next destination</p>
+      
+      <div class="panel">
+        <div class="campaign-map">
+          <svg class="map-svg" id="mapSvg">
+            <!-- Paths rendered by JS -->
+          </svg>
+          <!-- Nodes rendered by JS -->
+          <div id="mapNodes"></div>
+        </div>
+        
+        <div id="availableChoices">
+          <h3 class="section-title">Available Missions</h3>
+          <div class="choice-grid" id="choiceGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ============================================================
+         GAME COMPLETE SCREEN
+         ============================================================ -->
+    <div id="gameComplete" class="screen">
+      <h2 class="title" style="font-size: 3rem;">Victory</h2>
+      <p class="subtitle">The Lylat System is saved!</p>
+      
+      <div class="panel">
+        <div class="final-score">
+          <div class="final-score-label">FINAL SCORE</div>
+          <div class="final-score-value" id="finalScore">0</div>
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+          <h3 class="section-title">Path Taken</h3>
+          <div class="path-display" id="pathDisplay">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <div class="unlock-banner" id="unlockBanner">
+          <div class="unlock-title">🎉 NEW UNLOCK</div>
+          <div class="unlock-name" id="unlockName">Expert Mode</div>
+          <div class="unlock-desc" id="unlockDesc">Enemies deal 50% more damage</div>
+        </div>
+        
+        <div style="margin-bottom: 2rem;" id="allUnlocksSection">
+          <h3 class="section-title" style="color: #FFD700;">All Unlocks</h3>
+          <div class="all-unlocks" id="allUnlocks">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        
+        <div class="btn-group">
+          <button class="btn" onclick="startNewGamePlus()">New Game+</button>
+          <button class="btn secondary" onclick="showScreen('mainMenu')">Main Menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Demo Controls Panel -->
+<div class="demo-controls">
+  <h4>🎮 Demo Controls</h4>
+  <button onclick="simulateMissionComplete(true)">Complete Mission ✓</button>
+  <button onclick="simulateMissionComplete(false)">Fail Mission ✗</button>
+  <button onclick="showCampaignDemo()">Show Campaign Map</button>
+  <button onclick="skipToGameComplete()">Skip to Game Complete</button>
+  <button onclick="resetProgress()">Reset All Progress</button>
+  <p class="hint">Use these buttons to test the UI flow without actual gameplay</p>
+</div>
+
+<script>
+// ============================================================================
+// GAME DATA
+// ============================================================================
+
+const LEVELS = {
+  '1': {
+    id: '1',
+    name: 'CORNERIA',
+    subtitle: 'The Adventure Begins',
+    description: 'Enemy forces have invaded Corneria. Destroy the attack carrier!',
+    difficulty: 1,
+    nextChoices: ['2a', '2b'],
+  },
+  '2a': {
+    id: '2a',
+    name: 'METEO',
+    subtitle: 'Asteroid Field',
+    description: 'Navigate the treacherous asteroid belt. Watch for enemy ambushes!',
+    difficulty: 2,
+    nextChoices: ['3'],
+  },
+  '2b': {
+    id: '2b',
+    name: 'SECTOR Y',
+    subtitle: 'Combat Zone',
+    description: 'Heavy enemy resistance detected. Eliminate all hostiles!',
+    difficulty: 3,
+    nextChoices: ['3'],
+  },
+  '3': {
+    id: '3',
+    name: 'AQUAS',
+    subtitle: 'Terror of the Deep',
+    description: 'Dive into the ocean depths. Destroy the bioweapon!',
+    difficulty: 3,
+    nextChoices: ['4a', '4b'],
+  },
+  '4a': {
+    id: '4a',
+    name: 'ZONESS',
+    subtitle: 'Toxic Wasteland',
+    description: 'The polluted seas hide a secret base. Find and destroy it!',
+    difficulty: 4,
+    nextChoices: ['5'],
+  },
+  '4b': {
+    id: '4b',
+    name: 'MACBETH',
+    subtitle: 'The Forever Train',
+    description: 'Stop the weapons train before it reaches the supply depot!',
+    difficulty: 4,
+    nextChoices: ['5'],
+  },
+  '5': {
+    id: '5',
+    name: 'VENOM',
+    subtitle: 'The Final Battle',
+    description: 'Andross awaits. This is the ultimate showdown!',
+    difficulty: 5,
+    nextChoices: [],
+    isFinal: true,
+  },
+};
+
+const MAP_POSITIONS = {
+  '1': { x: 10, y: 50 },
+  '2a': { x: 30, y: 25 },
+  '2b': { x: 30, y: 75 },
+  '3': { x: 50, y: 50 },
+  '4a': { x: 70, y: 25 },
+  '4b': { x: 70, y: 75 },
+  '5': { x: 90, y: 50 },
+};
+
+const CONNECTIONS = [
+  { from: '1', to: '2a' },
+  { from: '1', to: '2b' },
+  { from: '2a', to: '3' },
+  { from: '2b', to: '3' },
+  { from: '3', to: '4a' },
+  { from: '3', to: '4b' },
+  { from: '4a', to: '5' },
+  { from: '4b', to: '5' },
+];
+
+const WINGMEN = {
+  falco: { name: 'FALCO LOMBARDI', portrait: '🦅', specialty: 'Offensive Support' },
+  peppy: { name: 'PEPPY HARE', portrait: '🐰', specialty: 'Tactical Advice' },
+  slippy: { name: 'SLIPPY TOAD', portrait: '🐸', specialty: 'Enemy Analysis' },
+};
+
+const NG_PLUS_UNLOCKS = {
+  1: { name: 'Expert Mode', description: 'Enemies deal 50% more damage' },
+  2: { name: 'Hyper Laser', description: 'Start with upgraded weapons' },
+  3: { name: 'Stealth Mode', description: 'Reduced enemy detection range' },
+  4: { name: 'Boss Rush', description: 'Fight all bosses in sequence' },
+  5: { name: 'Mirror Mode', description: 'All levels are mirrored' },
+};
+
+// ============================================================================
+// GAME STATE
+// ============================================================================
+
+let gameState = {
+  selectedWingmen: [],
+  currentLevel: '1',
+  completedLevels: [],
+  totalScore: 0,
+  completedRuns: 0,
+  lastResultsSuccess: true,
+};
+
+// ============================================================================
+// SCREEN MANAGEMENT
+// ============================================================================
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  
+  // Screen-specific setup
+  if (screenId === 'mission') {
+    updateMissionScreen();
+  } else if (screenId === 'campaignChoice') {
+    updateCampaignMap();
+  } else if (screenId === 'mainMenu') {
+    updateMainMenu();
+  }
+}
+
+// ============================================================================
+// MAIN MENU
+// ============================================================================
+
+function updateMainMenu() {
+  const continueBtn = document.getElementById('continueBtn');
+  const ngplusIndicator = document.getElementById('ngplusIndicator');
+  const runsCount = document.getElementById('runsCount');
+  
+  // Enable continue if there's progress
+  continueBtn.disabled = gameState.selectedWingmen.length === 0;
+  
+  // Show NG+ indicator
+  if (gameState.completedRuns > 0) {
+    ngplusIndicator.style.display = 'block';
+    runsCount.textContent = `${gameState.completedRuns} run${gameState.completedRuns > 1 ? 's' : ''} completed`;
+  } else {
+    ngplusIndicator.style.display = 'none';
+  }
+}
+
+function continueGame() {
+  if (gameState.completedLevels.length > 0) {
+    showScreen('campaignChoice');
+  } else if (gameState.selectedWingmen.length > 0) {
+    showScreen('mission');
+  } else {
+    showScreen('wingmanChoice');
+  }
+}
+
+// ============================================================================
+// OPTIONS
+// ============================================================================
+
+function updateSlider(id) {
+  const slider = document.getElementById(id);
+  const value = slider.value;
+  document.getElementById(id + 'Val').textContent = value + '%';
+}
+
+// ============================================================================
+// WINGMAN SELECTION
+// ============================================================================
+
+function toggleWingman(id) {
+  const card = document.getElementById('wingman-' + id);
+  const idx = gameState.selectedWingmen.indexOf(id);
+  
+  if (idx > -1) {
+    gameState.selectedWingmen.splice(idx, 1);
+    card.classList.remove('selected');
+  } else if (gameState.selectedWingmen.length < 2) {
+    gameState.selectedWingmen.push(id);
+    card.classList.add('selected');
+  }
+  
+  updateConfirmButton();
+}
+
+function updateConfirmButton() {
+  const btn = document.getElementById('confirmTeamBtn');
+  const count = gameState.selectedWingmen.length;
+  btn.textContent = `Confirm Team (${count}/2)`;
+  btn.disabled = count !== 2;
+}
+
+function confirmTeam() {
+  if (gameState.selectedWingmen.length === 2) {
+    gameState.currentLevel = '1';
+    gameState.completedLevels = [];
+    gameState.totalScore = 0;
+    showScreen('mission');
+  }
+}
+
+// ============================================================================
+// MISSION SCREEN
+// ============================================================================
+
+function updateMissionScreen() {
+  const level = LEVELS[gameState.currentLevel];
+  
+  document.getElementById('missionNumber').textContent = gameState.currentLevel;
+  document.getElementById('missionName').textContent = level.name;
+  document.getElementById('missionSubtitle').textContent = level.subtitle;
+  document.getElementById('missionDesc').textContent = level.description;
+  
+  // Update difficulty dots
+  const dotsContainer = document.getElementById('difficultyDots');
+  dotsContainer.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'difficulty-dot' + (i <= level.difficulty ? ' active' : '');
+    dotsContainer.appendChild(dot);
+  }
+  
+  // Update squadron display
+  const squadronDisplay = document.getElementById('squadronDisplay');
+  squadronDisplay.innerHTML = `
+    <div class="squadron-member leader">
+      <span class="portrait">🦊</span>
+      <div>
+        <div class="name">FOX McCLOUD</div>
+        <div class="role">Team Leader</div>
+      </div>
+    </div>
+  `;
+  
+  gameState.selectedWingmen.forEach(wmId => {
+    const wm = WINGMEN[wmId];
+    squadronDisplay.innerHTML += `
+      <div class="squadron-member">
+        <span class="portrait">${wm.portrait}</span>
+        <div>
+          <div class="name">${wm.name}</div>
+          <div class="role">${wm.specialty}</div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function goBackFromMission() {
+  if (gameState.completedLevels.length > 0) {
+    showScreen('campaignChoice');
+  } else {
+    showScreen('wingmanChoice');
+  }
+}
+
+function launchMission() {
+  // ================================================================
+  // INTEGRATION POINT: LEVEL LOADING
+  // ================================================================
+  // In a real implementation, this is where you would:
+  // 1. Hide the menu system
+  // 2. Initialize the Three.js scene for the current level
+  // 3. Start the gameplay
+  //
+  // Example:
+  // const levelData = LEVELS[gameState.currentLevel];
+  // menuSystem.hide();
+  // levelLoader.load(levelData.id, {
+  //   wingmen: gameState.selectedWingmen,
+  //   onComplete: (results) => {
+  //     menuSystem.show();
+  //     handleLevelComplete(results);
+  //   }
+  // });
+  // ================================================================
+  
+  console.log('🚀 Launching mission:', gameState.currentLevel);
+  console.log('   Wingmen:', gameState.selectedWingmen);
+  console.log('   (In demo mode - use Demo Controls to simulate completion)');
+  
+  // For demo purposes, show an alert
+  alert(`Mission "${LEVELS[gameState.currentLevel].name}" would start here.\n\nUse the Demo Controls panel to simulate mission completion.`);
+}
+
+// ============================================================================
+// RESULTS SCREEN
+// ============================================================================
+
+function showResults(success, results = null) {
+  gameState.lastResultsSuccess = success;
+  
+  const level = LEVELS[gameState.currentLevel];
+  
+  // Generate mock results if not provided
+  if (!results) {
+    results = generateMockResults(success);
+  }
+  
+  // Update title
+  const titleEl = document.getElementById('resultsTitle');
+  titleEl.textContent = success ? 'Mission Complete' : 'Mission Failed';
+  titleEl.className = 'title ' + (success ? 'victory' : 'defeat');
+  
+  document.getElementById('resultsLevelName').textContent = level.name;
+  document.getElementById('resultScore').textContent = results.score.toLocaleString();
+  document.getElementById('resultHits').textContent = results.hits;
+  document.getElementById('resultAccuracy').textContent = results.accuracy + '%';
+  document.getElementById('resultTime').textContent = results.time;
+  document.getElementById('rankDisplay').textContent = results.rank;
+  
+  // Squadron status
+  const statusDisplay = document.getElementById('statusDisplay');
+  statusDisplay.innerHTML = results.wingmenStatus.map(ws => `
+    <div class="status-item ${ws.alive ? 'alive' : 'down'}">
+      <span>${ws.portrait}</span> ${ws.name}: ${ws.alive ? 'OK' : 'DOWN'}
+    </div>
+  `).join('');
+  
+  // Bonuses
+  const bonusSection = document.getElementById('bonusSection');
+  const bonusDisplay = document.getElementById('bonusDisplay');
+  if (results.bonuses && results.bonuses.length > 0) {
+    bonusSection.style.display = 'block';
+    bonusDisplay.innerHTML = results.bonuses.map(b => `
+      <div class="bonus-item">${b}</div>
+    `).join('');
+  } else {
+    bonusSection.style.display = 'none';
+  }
+  
+  // Update button text
+  document.getElementById('resultsBtn').textContent = success ? 'Continue' : 'Retry';
+  
+  showScreen('results');
+}
+
+function generateMockResults(success) {
+  const baseScore = success ? 8000 + Math.floor(Math.random() * 10000) : 2000 + Math.floor(Math.random() * 3000);
+  const hits = success ? 50 + Math.floor(Math.random() * 100) : 20 + Math.floor(Math.random() * 30);
+  const accuracy = success ? 60 + Math.floor(Math.random() * 35) : 30 + Math.floor(Math.random() * 30);
+  
+  const wingmenStatus = [
+    { portrait: '🦊', name: 'Fox', alive: true },
+    ...gameState.selectedWingmen.map(id => ({
+      portrait: WINGMEN[id].portrait,
+      name: WINGMEN[id].name.split(' ')[0],
+      alive: success ? Math.random() > 0.3 : Math.random() > 0.6,
+    })),
+  ];
+  
+  const bonuses = [];
+  if (success) {
+    if (accuracy > 80) bonuses.push('Sharpshooter');
+    if (hits > 100) bonuses.push('Ace Pilot');
+    if (wingmenStatus.every(w => w.alive)) bonuses.push('Team Intact');
+  }
+  
+  const rankScore = success ? (accuracy > 80 ? 'S' : accuracy > 60 ? 'A' : 'B') : 'C';
+  
+  return {
+    score: baseScore,
+    hits,
+    accuracy,
+    time: `${Math.floor(Math.random() * 5) + 2}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`,
+    rank: rankScore,
+    wingmenStatus,
+    bonuses,
+  };
+}
+
+function continueFromResults() {
+  if (!gameState.lastResultsSuccess) {
+    // Retry - go back to mission screen
+    showScreen('mission');
+    return;
+  }
+  
+  // Add completed level and score
+  gameState.completedLevels.push(gameState.currentLevel);
+  const mockScore = parseInt(document.getElementById('resultScore').textContent.replace(/,/g, ''));
+  gameState.totalScore += mockScore;
+  
+  const level = LEVELS[gameState.currentLevel];
+  
+  // Check if game complete
+  if (level.isFinal) {
+    gameState.completedRuns++;
+    showGameComplete();
+  } else {
+    showScreen('campaignChoice');
+  }
+}
+
+// ============================================================================
+// CAMPAIGN MAP
+// ============================================================================
+
+function updateCampaignMap() {
+  const svg = document.getElementById('mapSvg');
+  const nodesContainer = document.getElementById('mapNodes');
+  const choiceGrid = document.getElementById('choiceGrid');
+  
+  // Get available choices
+  const lastCompleted = gameState.completedLevels[gameState.completedLevels.length - 1];
+  const lastLevel = lastCompleted ? LEVELS[lastCompleted] : null;
+  const availableChoices = lastLevel ? 
+    lastLevel.nextChoices.filter(id => !gameState.completedLevels.includes(id)) : 
+    ['1'];
+  
+  // Draw paths
+  svg.innerHTML = CONNECTIONS.map(conn => {
+    const from = MAP_POSITIONS[conn.from];
+    const to = MAP_POSITIONS[conn.to];
+    const isCompleted = gameState.completedLevels.includes(conn.from) && gameState.completedLevels.includes(conn.to);
+    const isAvailable = gameState.completedLevels.includes(conn.from) && availableChoices.includes(conn.to);
+    
+    return `<line 
+      x1="${from.x}%" y1="${from.y}%" 
+      x2="${to.x}%" y2="${to.y}%"
+      stroke="${isCompleted ? '#00ff88' : isAvailable ? '#3388ff' : '#333'}"
+      stroke-width="${isAvailable ? 4 : 2}"
+      stroke-dasharray="${isAvailable && !isCompleted ? '8,4' : 'none'}"
+    />`;
+  }).join('');
+  
+  // Draw nodes
+  nodesContainer.innerHTML = Object.entries(MAP_POSITIONS).map(([levelId, pos]) => {
+    let nodeClass = 'map-node ';
+    if (gameState.completedLevels.includes(levelId)) {
+      nodeClass += 'completed';
+    } else if (availableChoices.includes(levelId)) {
+      nodeClass += 'available';
+    } else if (levelId === gameState.currentLevel) {
+      nodeClass += 'current';
+    } else {
+      nodeClass += 'locked';
+    }
+    
+    const clickHandler = availableChoices.includes(levelId) ? 
+      `onclick="selectLevel('${levelId}')"` : '';
+    
+    return `<div class="${nodeClass}" style="left: ${pos.x}%; top: ${pos.y}%;" ${clickHandler}>
+      ${levelId}
+    </div>`;
+  }).join('');
+  
+  // Update choice cards
+  if (availableChoices.length > 0) {
+    choiceGrid.innerHTML = availableChoices.map(levelId => {
+      const level = LEVELS[levelId];
+      return `<div class="card choice-card" onclick="selectLevel('${levelId}')">
+        <div class="choice-header">
+          <span class="choice-number">${levelId}</span>
+          <div>
+            <div class="choice-name">${level.name}</div>
+            <div class="choice-subtitle">${level.subtitle}</div>
+          </div>
+        </div>
+        <p class="choice-desc">${level.description}</p>
+      </div>`;
+    }).join('');
+  }
+}
+
+function selectLevel(levelId) {
+  gameState.currentLevel = levelId;
+  showScreen('mission');
+}
+
+// ============================================================================
+// GAME COMPLETE
+// ============================================================================
+
+function showGameComplete() {
+  document.getElementById('finalScore').textContent = gameState.totalScore.toLocaleString();
+  
+  // Show path taken
+  const pathDisplay = document.getElementById('pathDisplay');
+  pathDisplay.innerHTML = gameState.completedLevels.map((levelId, idx) => {
+    const level = LEVELS[levelId];
+    return `<div class="path-node">${level.name}</div>` + 
+      (idx < gameState.completedLevels.length - 1 ? '<span class="path-arrow">→</span>' : '');
+  }).join('');
+  
+  // Show unlock
+  const currentUnlock = NG_PLUS_UNLOCKS[gameState.completedRuns];
+  if (currentUnlock) {
+    document.getElementById('unlockBanner').style.display = 'block';
+    document.getElementById('unlockName').textContent = currentUnlock.name;
+    document.getElementById('unlockDesc').textContent = currentUnlock.description;
+  } else {
+    document.getElementById('unlockBanner').style.display = 'none';
+  }
+  
+  // Show all unlocks
+  const allUnlocks = document.getElementById('allUnlocks');
+  const unlockedItems = Object.entries(NG_PLUS_UNLOCKS)
+    .filter(([level]) => parseInt(level) <= gameState.completedRuns)
+    .map(([, unlock]) => `<div class="unlock-item">${unlock.name}</div>`)
+    .join('');
+  
+  if (unlockedItems) {
+    document.getElementById('allUnlocksSection').style.display = 'block';
+    allUnlocks.innerHTML = unlockedItems;
+  } else {
+    document.getElementById('allUnlocksSection').style.display = 'none';
+  }
+  
+  showScreen('gameComplete');
+}
+
+function startNewGamePlus() {
+  gameState.selectedWingmen = [];
+  gameState.currentLevel = '1';
+  gameState.completedLevels = [];
+  gameState.totalScore = 0;
+  
+  // Reset wingman selection UI
+  document.querySelectorAll('.wingman-card').forEach(c => c.classList.remove('selected'));
+  updateConfirmButton();
+  
+  showScreen('wingmanChoice');
+}
+
+// ============================================================================
+// DEMO CONTROLS
+// ============================================================================
+
+function simulateMissionComplete(success) {
+  console.log(`📊 Simulating mission ${success ? 'success' : 'failure'}`);
+  showResults(success);
+}
+
+function showCampaignDemo() {
+  // Set up demo state: Level 1 completed, showing branch choices
+  if (gameState.selectedWingmen.length === 0) {
+    gameState.selectedWingmen = ['falco', 'slippy'];
+  }
+  gameState.completedLevels = ['1'];
+  gameState.currentLevel = '1';
+  gameState.totalScore = 12500;
+  
+  console.log('🗺️ Showing Campaign Map with branch choices');
+  updateCampaignMap();
+  showScreen('campaignChoice');
+}
+
+function skipToGameComplete() {
+  // Set a sample completed path
+  gameState.completedLevels = ['1', '2a', '3', '4a', '5'];
+  gameState.totalScore = 75000 + Math.floor(Math.random() * 25000);
+  gameState.completedRuns++;
+  showGameComplete();
+}
+
+function resetProgress() {
+  gameState = {
+    selectedWingmen: [],
+    currentLevel: '1',
+    completedLevels: [],
+    totalScore: 0,
+    completedRuns: 0,
+    lastResultsSuccess: true,
+  };
+  
+  // Reset UI
+  document.querySelectorAll('.wingman-card').forEach(c => c.classList.remove('selected'));
+  updateConfirmButton();
+  
+  showScreen('mainMenu');
+  console.log('🔄 Progress reset');
+}
+
+// ============================================================================
+// STARFIELD ANIMATION
+// ============================================================================
+
+function initStarfield() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  const stars = [];
+  
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initStars();
+  }
+  
+  function initStars() {
+    stars.length = 0;
+    for (let i = 0; i < 150; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2 + 0.5,
+        speed: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.8 + 0.2,
+      });
+    }
+  }
+  
+  function animate() {
+    ctx.fillStyle = 'rgba(10, 10, 18, 0.2)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    stars.forEach(star => {
+      star.x -= star.speed;
+      if (star.x < 0) {
+        star.x = canvas.width;
+        star.y = Math.random() * canvas.height;
+      }
+      
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+      ctx.fill();
+    });
+    
+    requestAnimationFrame(animate);
+  }
+  
+  window.addEventListener('resize', resize);
+  resize();
+  animate();
+}
+
+// ============================================================================
+// INITIALIZATION
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  initStarfield();
+  updateMainMenu();
+  console.log('🎮 Star Squadron Menu System Demo loaded');
+  console.log('   Use the Demo Controls panel (bottom-right) to test the UI flow');
+});
+</script>
+
+</body>
+</html>
